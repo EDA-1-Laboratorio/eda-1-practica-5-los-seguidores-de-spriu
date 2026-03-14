@@ -1,5 +1,4 @@
-/* 
- * Objetivo: Utilizar el comportamiento LIFO para invertir cadenas.
+/* * Objetivo: Utilizar el comportamiento LIFO para invertir cadenas.
  */
 
 #include <stdio.h>
@@ -24,6 +23,35 @@ void inicializar(PILA *s);
 void push(PILA *s, DATA x);
 DATA pop(PILA *s);
 int estavacia(PILA *s);
+
+void inicializar(PILA *s) {
+    s->cnt = 0;
+    s->tope = NULL;
+}
+
+void push(PILA *s, DATA x) {
+    ELEMENTO *nuevo = (ELEMENTO *)malloc(sizeof(ELEMENTO));
+    nuevo->d = x;
+    nuevo->siguiente = s->tope;
+    s->tope = nuevo;
+    s->cnt++;
+}
+
+DATA pop(PILA *s) {
+    if (estavacia(s)) {
+        return '\0';
+    }
+    ELEMENTO *temp = s->tope;
+    DATA valor = temp->d;
+    s->tope = temp->siguiente;
+    free(temp);
+    s->cnt--;
+    return valor;
+}
+
+int estavacia(PILA *s) {
+    return s->cnt == 0;
+}
 
 /**
  * TAREA PRINCIPAL: Determinar si la cadena es palíndromo.
@@ -53,8 +81,31 @@ int esPalindromo(char cadena[]) {
     // ¿Cómo usarías las dos pilas para tener la cadena al derecho y al revés?
     
     /* TODO: Implementar lógica de comparación usando las dos pilas */
+    
+    int total_letras = original.cnt;
+    int mitad = total_letras / 2;
 
-    return 1; // Retornar 1 si es palíndromo, 0 si no.
+    for (i = 0; i < mitad; i++) {
+        push(&invertida, pop(&original));
+    }
+
+    if (total_letras % 2 != 0) {
+        pop(&original);
+    }
+
+    int es_palin = 1; 
+    
+    while (!estavacia(&original) && !estavacia(&invertida)) {
+        if (pop(&original) != pop(&invertida)) {
+            es_palin = 0; 
+            break;        
+        }
+    }
+
+    while (!estavacia(&original)) pop(&original);
+    while (!estavacia(&invertida)) pop(&invertida);
+
+    return es_palin; // Retornar 1 si es palíndromo, 0 si no.
 }
 
 int main() {
