@@ -1,5 +1,5 @@
-/* 
- * Objetivo: Completar las primitivas de la pila para evaluación de RPN.
+/* * Archivo: pilas.c (o main.c)
+ * Objetivo: Implementación de la calculadora RPN utilizando pilas.
  */
 
 #include "pilas.h"
@@ -9,105 +9,117 @@
 #include <assert.h>
 
 // =========================================================
-// SECCIÓN 1: PRIMITIVAS DE LA PILA (A IMPLEMENTAR)
+// SECCIÓN 1: PRIMITIVAS DE LA PILA Y FUNCIONES AUXILIARES
 // =========================================================
 
 // Funcion inicializar
 void inicializar(PILA *stk) {
-    /* TODO: 
-       1. Inicializar el contador de elementos (cnt) a 0.
-       2. Inicializar el puntero al tope a NULL. 
-    */
-}
-
-// Funcion push
-void push(PILA *stk, DATO x) {
-    /* TODO: 
-       1. Declarar un puntero a ELEMENTO y asignar memoria con malloc.
-       2. Asignar el dato 'x' al nuevo elemento.
-       3. Hacer que el nuevo elemento apunte al actual tope de la pila.
-       4. Actualizar el tope de la pila para que sea el nuevo elemento.
-       5. Incrementar el contador (cnt).
-    */
-}
-
-// Funcion pop
-DATO pop(PILA *stk) {
-    if (estavacia(stk)) {
-        printf("ERROR: Intento de POP en pila vacia (Stack Underflow)\n");
-        exit(1); 
-    }
-    /* TODO: 
-       1. Declarar una variable DATO para el valor de retorno.
-       2. Declarar un puntero ELEMENTO temporal para el nodo a eliminar.
-       3. Guardar el dato del tope en la variable DATO.
-       4. Hacer que el tope de la pila apunte al siguiente elemento.
-       5. Decrementar el contador (cnt).
-       6. Liberar la memoria (free) del nodo temporal.
-       7. Retornar el dato.
-    */
+    stk->cnt = EMPTY; // Usamos la constante definida en pilas.h
+    stk->tope = NULL;
 }
 
 // Funcion estavacia
 BOOLEAN estavacia(PILA *stk) {
-    /* TODO: Retornar VERDADERO si el contador es 0, FALSO de lo contrario. */
-    return FALSE; 
+    if (stk->cnt == EMPTY) {
+        return VERDADERO;
+    }
+    return FALSO;
 }
 
 // Funcion estallena
 BOOLEAN estallena(PILA *stk) {
-    /* TODO: Retornar VERDADERO si el contador es igual a FULL. */
-    return FALSE;
+    if (stk->cnt >= FULL) {
+        return VERDADERO;
+    }
+    return FALSO;
 }
 
+// Funcion push (apilar)
+void push(PILA *stk, DATO x) {
+    if (estallena(stk) == VERDADERO) {
+        printf("ERROR: Pila llena (Stack Overflow)\n");
+        exit(1);
+    }
+    
+    ELEMENTO *nuevo = (ELEMENTO *)malloc(sizeof(ELEMENTO));
+    if (nuevo == NULL) {
+        printf("ERROR: No hay memoria suficiente.\n");
+        exit(1);
+    }
+    
+    nuevo->d = x;
+    nuevo->siguiente = stk->tope;
+    stk->tope = nuevo;
+    stk->cnt++;
+}
+
+// Funcion pop (desapilar)
+DATO pop(PILA *stk) {
+    if (estavacia(stk) == VERDADERO) {
+        printf("ERROR: Intento de POP en pila vacia (Stack Underflow)\n");
+        exit(1); 
+    }
+    
+    DATO valor_retorno;
+    ELEMENTO *temp = stk->tope;
+    
+    valor_retorno = temp->d;
+    stk->tope = temp->siguiente;
+    stk->cnt--;
+    free(temp);
+    
+    return valor_retorno;
+}
+
+
 // =========================================================
-// SECCIÓN 2: LÓGICA DE ALTO NIVEL (DESCRIPCIÓN INCLUIDA)
+// SECCIÓN 2: LÓGICA DE ALTO NIVEL PARA NOTACIÓN POLACA
 // =========================================================
 
 // Funcion rellenar
-void rellenar(PILA *stk, const char *str){
+void rellenar(PILA *stk, const char *str) {
     const char *p = str; 
     char c1, c2; 
     BOOLEAN b1, b2; 
     DATO d; 
     PILA aux; 
 
-    inicializar(stk); // Inicializamos la pila principal antes de llenarla.
-    inicializar(&aux); // Inicializamos la pila auxiliar para invertir el orden.
+    inicializar(stk);  //Inicializamos la pila principal antes de llenarla.
+    inicializar(&aux); //Inicializamos la pila auxiliar para invertir el orden.
 
     while (*p != '\0') {
         while(isspace(*p) || *p == '\t' || *p == ',') { 
-            p++; // Saltamos espacios, tabulaciones y comas.
+            p++; //Saltamos espacios, tabulaciones y comas para encontrar el siguiente token.
         }
         if (*p == '\0') break;
 
+        // Evaluamos si es operador y si el siguiente caracter es un separador válido
         b1 = (BOOLEAN) ((c1 = *p) == '+' || c1 == '-' || c1 == '*'); 
         b2 = (BOOLEAN) ((c2 = *(p + 1)) == ' ' || c2 == '\t' || c2 == ',' || c2 == '\0'); 
 
-        if (b1 && b2) { 
-            d.tipo = OPERADOR; // Establecemos el tipo del dato como OPERADOR.
-            d.u.op = c1; // Asignamos el operador actual.
+        if (b1 == VERDADERO && b2 == VERDADERO) { 
+            d.tipo = OPERADOR; //Establescamos el tipo del dato como OPERADOR.
+            d.u.op = c1; //Asignamos el operador actual.
             p++;
         }
         else {
             d.tipo = VALOR;
-            // Extraemos el valor entero de la cadena y lo almacenamos en val.
             assert(sscanf(p, "%d", &d.u.val) == 1); 
             while (*p != '\0' && !isspace(*p) && *p != '\t' && *p != ',') {
-                p++; // Avanzamos p hasta el siguiente separador.
+                p++; //Avanzamos p hasta el siguiente separador.
             }
         }
         
-        if (!estallena(&aux)) { 
-            push(&aux, d); // Empujamos a la auxiliar para procesar la cadena.
+        if (estallena(&aux) == FALSO) { 
+            push(&aux, d);  //Empujamos a la auxiliar para procesar la cadena.
         }
     }
     
-    // Ahora tomamos el dato de la pila auxiliar y lo pasamos a la principal.
-    // Esto invierte el orden para que se procesen correctamente después.
-    while (!estavacia(&aux)) { 
+    //Ahora tomamos el dato de la pila auxiliar y lo pasamos a la pila principal.
+    // Esto invierte el orden para que se procesen correctamente después.   
+    while (estavacia(&aux) == FALSO) { 
         d = pop(&aux); 
-        if (!estallena(stk)) { 
+        if (estallena(stk) == FALSO) { 
             push(stk, d); 
         }
     }
@@ -121,19 +133,19 @@ int evaluar(PILA *polaca) {
     // Inicializar la pila de evaluación para almacenar los operandos.
     inicializar(&evaluacion); 
 
-    while(!estavacia(polaca)) {
+    while(estavacia(polaca) == FALSO) {
         d = pop(polaca);
         switch (d.tipo) { 
             case VALOR: 
-                // Si el dato es un valor, se empuja a la pila de evaluación.
+            // Si el dato es un valor, se empuja a la pila de evaluación.
                 push(&evaluacion, d); 
                 break;
-            case OPERADOR: 
+            case OPERADOR:
                 // Sacamos los dos argumentos de la pila de evaluación.
-                // d2 es el segundo operando y d1 el primero (LIFO).
+                // d2 es el segundo operando y d1 el primero (LIFO). 
                 d2 = pop(&evaluacion); 
                 d1 = pop(&evaluacion);
-                d.tipo = VALOR; // El resultado será un VALOR.
+                d.tipo = VALOR; //El resultado será un VALOR.
                 
                 switch (d.u.op) { 
                     case '+': d.u.val = d1.u.val + d2.u.val; break;
@@ -151,8 +163,12 @@ int evaluar(PILA *polaca) {
     return d.u.val; 
 }
 
+// =========================================================
+// SECCIÓN 3: FUNCIÓN PRINCIPAL (MAIN)
+// =========================================================
+
 int main(void) {
-    char str[] = "3 4 5 + *"; // Representa (4 + 5) * 3 = 27
+    char str[] = "3 4 5 + *"; // (4 + 5) * 3 = 27
     PILA polaca;
 
     printf("--- INICIO DE PRÁCTICA ---\n");
